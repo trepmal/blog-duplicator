@@ -19,6 +19,11 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 *     wp blog-dupe dupe domain-slug
 	 */
 	function dupe( $args, $assoc_args ) {
+
+		if ( ! is_multisite() ) {
+			WP_CLI::error( "This is a multisite command only." );
+		}
+
 		global $wpdb;
 
 		// get info for origin site
