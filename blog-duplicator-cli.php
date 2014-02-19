@@ -84,6 +84,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 			$wpdb->query( "TRUNCATE TABLE $table" );
 			$wpdb->query( "INSERT INTO $table SELECT * FROM $origin_table" );
 		}
+		update_option( 'blogname', $title );
 		WP_CLI::run_command( array( 'search-replace', $origin_url, $url ) );
 		restore_current_blog();
 
