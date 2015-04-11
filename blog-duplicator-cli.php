@@ -6,7 +6,7 @@
 class Blog_Duplicate extends WP_CLI_Command {
 
 	/**
-	 * Blog Duplicate
+	 * Duplicate the current blog.
 	 *
 	 * ## OPTIONS
 	 *
@@ -15,10 +15,10 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp blog-dupe dupe
-	 *     wp blog-dupe dupe domain-slug
+	 *     wp duplicate
+	 *     wp duplicate domain-slug
 	 */
-	function dupe( $args, $assoc_args ) {
+	function __invoke( $args, $assoc_args ) {
 
 		if ( ! is_multisite() ) {
 			WP_CLI::error( "This is a multisite command only." );
@@ -76,16 +76,35 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		WP_CLI::line( "Duplicating tables..." );
 
+		$src_wp_upload_dir = wp_upload_dir();
+		$src_basedir = $src_wp_upload_dir['basedir'];
+		$src_baseurl = $src_wp_upload_dir['baseurl'];
+
 		// duplicate tables
 		switch_to_blog( $id );
-		$url = home_url();
-		foreach ( $wpdb->tables('blog') as $k => $table ) {
-			$origin_table = $origin_tables[ $k ];
-			$wpdb->query( "TRUNCATE TABLE $table" );
-			$wpdb->query( "INSERT INTO $table SELECT * FROM $origin_table" );
-		}
-		update_option( 'blogname', $title );
-		WP_CLI::run_command( array( 'search-replace', $origin_url, $url ) );
+			// make upload destination
+			$dest_wp_upload_dir = wp_upload_dir();
+			$dest_basedir = $dest_wp_upload_dir['basedir'];
+			$dest_baseurl = $dest_wp_upload_dir['baseurl'];
+			wp_mkdir_p( $dest_basedir );
+
+			// copy files
+			shell_exec( "rsync -a {$src_basedir}/ {$dest_basedir} --exclude sites" );
+
+			// duplicate tables
+			$url = home_url();
+			foreach ( $wpdb->tables('blog') as $k => $table ) {
+				$origin_table = $origin_tables[ $k ];
+				$wpdb->query( "TRUNCATE TABLE $table" );
+				$wpdb->query( "INSERT INTO $table SELECT * FROM $origin_table" );
+			}
+			update_option( 'blogname', $title );
+
+			// long match first, replace upload url
+			WP_CLI::run_command( array( 'search-replace', $src_baseurl, $dest_baseurl ) );
+			// replace root url
+			WP_CLI::run_command( array( 'search-replace', $origin_url, $url ) );
+
 		restore_current_blog();
 
 		WP_CLI::success( "Blog $id created." );
@@ -94,4 +113,4 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 }
 
-WP_CLI::add_command( 'blog-dupe', 'Blog_Duplicate' );
+WP_CLI::add_command( 'duplicate', 'Blog_Duplicate' );
