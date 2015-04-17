@@ -30,6 +30,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		$origin_prefix = $wpdb->prefix;
 		$origin_tables = $wpdb->tables('blog');
 		$origin_url = home_url();
+		$origin_id = get_current_blog_id();
 
 		global $current_site;
 
@@ -85,10 +86,26 @@ class Blog_Duplicate extends WP_CLI_Command {
 			$wpdb->query( "INSERT INTO $table SELECT * FROM $origin_table" );
 		}
 		update_option( 'blogname', $title );
+
+		// rename user_roles key
+		$t = $wpdb->query(
+			$wpdb->prepare( "UPDATE $wpdb->options SET option_name = %s WHERE option_name = %s",
+				$wpdb->base_prefix . $id . '_user_roles',
+				$wpdb->base_prefix . $origin_id . '_user_roles'
+			)
+		);
+
+		// upload path
+		update_option( 'upload_path', "wp-content/blogs.dir/$id/files" );
+
 		WP_CLI::run_command( array( 'search-replace', $origin_url, $url ) );
 		restore_current_blog();
 
 		WP_CLI::success( "Blog $id created." );
+
+		$info = WP_CLI::colorize( '%BCopy over uploads to new site with (example):%n');
+		WP_CLI::line( "\n$info" );
+		WP_CLI::line( "cp -R  wp-content/blogs.dir/$origin_id wp-content/blogs.dir/$id\n" );
 
 	}
 
