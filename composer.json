@@ -1,0 +1,6 @@
+{
+	"name": "trepmal/blog-duplicator",
+	"description": "Blog Duplicator",
+	"type": "wordpress-plugin",
+	"license": "MIT"
+}
