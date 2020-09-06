@@ -95,7 +95,8 @@ class Blog_Duplicate extends WP_CLI_Command {
 				$table = str_replace($from_site_prefix_like, $target_site_prefix_like, $origin_table);
 				
 				$wpdb->query( "DROP TABLE IF EXISTS $table" );
-				$wpdb->query( "CREATE TABLE $table SELECT * FROM $origin_table" );
+				$wpdb->query( "Create table $table like $origin_table" );
+				$wpdb->query( "insert into $table select * from $origin_table" );
 			}
 			update_option( 'blogname', $title );
 			update_option( 'home', $target_url );
