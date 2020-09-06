@@ -39,6 +39,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		$sql_query = $wpdb->prepare('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'%s\' AND TABLE_NAME LIKE \'%s\'', $schema, $from_site_prefix_like . '%');
 		$origin_tables = $wpdb->get_col($sql_query);
 		$origin_url = home_url();
+		$original_roles = get_option($from_site_prefix_like . 'user_roles');
 
 		global $current_site;
 
@@ -101,6 +102,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 			update_option( 'blogname', $title );
 			update_option( 'home', $target_url );
 			update_option( 'siteurl', $target_url );
+			update_option( $target_site_prefix_like . 'user_roles',  $original_roles);
 
 			// long match first, replace upload url
 			WP_CLI::line( "Search-replace'ing tables (1/2)..." );
