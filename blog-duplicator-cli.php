@@ -34,7 +34,10 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		// get info for origin site
 		$origin_prefix = $wpdb->prefix;
-		$origin_tables = $wpdb->tables('blog');
+		$schema = DB_NAME;
+		$from_site_prefix_like = $wpdb->prefix;
+		$sql_query = $wpdb->prepare('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'%s\' AND TABLE_NAME LIKE \'%s\'', $schema, $from_site_prefix_like . '%');
+		$origin_tables = $wpdb->get_col($sql_query);
 		$origin_url = home_url();
 
 		global $current_site;
@@ -72,6 +75,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		// duplicate tables
 		switch_to_blog( $id );
+		$target_url = home_url();
 			// make upload destination
 			$dest_wp_upload_dir = wp_upload_dir();
 			$dest_basedir = $dest_wp_upload_dir['basedir'];
@@ -85,13 +89,17 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 			// duplicate tables
 			$url = home_url();
+			$target_site_prefix_like = $wpdb->prefix;
 			WP_CLI::line( "Duplicating tables..." );
-			foreach ( $wpdb->tables('blog') as $k => $table ) {
-				$origin_table = $origin_tables[ $k ];
-				$wpdb->query( "TRUNCATE TABLE $table" );
-				$wpdb->query( "INSERT INTO $table SELECT * FROM $origin_table" );
+			foreach ( $origin_tables as $k => $origin_table ) {
+				$table = str_replace($from_site_prefix_like, $target_site_prefix_like, $origin_table);
+				
+				$wpdb->query( "DROP TABLE IF EXISTS $table" );
+				$wpdb->query( "CREATE TABLE $table SELECT * FROM $origin_table" );
 			}
 			update_option( 'blogname', $title );
+			update_option( 'home', $target_url );
+			update_option( 'siteurl', $target_url );
 
 			// long match first, replace upload url
 			WP_CLI::line( "Search-replace'ing tables (1/2)..." );
