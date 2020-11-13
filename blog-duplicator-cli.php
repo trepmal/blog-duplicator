@@ -38,6 +38,14 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		// get table info for origin site.
 		$extra_tables = array();
+
+		/**
+		 * Filters the list blog tables for a given site.
+		 *
+		 * This filter allows new tables to be added to the core list.
+		 *
+		 * @param string[] $tables An array of blog tables without the database prefix.
+		 */
 		foreach ( apply_filters( 'blog_duplicator_extra_tables', array() ) as $extra_table ) {
 			$extra_tables[ $extra_table ] = $wpdb->prefix . $extra_table;
 		}
@@ -134,6 +142,11 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 			// Remove blocked options from option table before import.
 			if ( $wpdb->prefix . 'options' === $table ) {
+				/**
+				 * Filters the list of options that should not be copied.
+				 *
+				 * @param string[] $options An array of option names.
+				 */
 				$blocked_options = apply_filters( 'blog_duplicator_blocked_options', array( 'jetpack_options', 'jetpack_private_options', 'vaultpress' ) );
 
 				$sql = $wpdb->prepare( "INSERT INTO $table SELECT * FROM $origin_table WHERE option_name NOT IN (" . implode( ', ', array_fill( 0, count( $blocked_options ), '%s' ) ) . ')', ...$blocked_options );
