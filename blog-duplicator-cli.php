@@ -141,7 +141,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 			$wpdb->query( "TRUNCATE TABLE $table" );
 
 			// Remove blocked options from option table before import.
-			if ( $wpdb->prefix . 'options' === $table ) {
+			if ( $wpdb->options === $table ) {
 				/**
 				 * Filters the list of options that should not be copied.
 				 *
