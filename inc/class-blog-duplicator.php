@@ -6,7 +6,7 @@
 class Blog_Duplicate extends WP_CLI_Command {
 
 	/**
-	 * Duplicate the current blog.
+	 * Duplicate the current (as specifed by --url, or lack thereof) blog.
 	 *
 	 * ## OPTIONS
 	 *
@@ -36,7 +36,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		global $wpdb;
 
-		// get table info for origin site.
+		// Get table info for source (origin) site.
 		$extra_tables = array();
 
 		/**
@@ -50,53 +50,53 @@ class Blog_Duplicate extends WP_CLI_Command {
 			$extra_tables[ $extra_table ] = $wpdb->prefix . $extra_table;
 		}
 
-		$origin_tables  = array_merge( $wpdb->tables( 'blog' ), $extra_tables );
-		$origin_url     = home_url();
-		$original_roles = get_option( $wpdb->prefix . 'user_roles');
+		$src_tables = array_merge( $wpdb->tables( 'blog' ), $extra_tables );
+		$src_url    = home_url();
+		$src_roles  = get_option( $wpdb->prefix . 'user_roles');
 
 		global $current_site;
 
-		// new site information.
+		// Set up new site information.
 		if ( is_subdomain_install() ) {
-			$newdomain = $new_slug . '.' . preg_replace( '|^www\.|', '', $current_site->domain );
-			$path      = $current_site->path;
+			$dest_domain = $new_slug . '.' . preg_replace( '|^www\.|', '', $current_site->domain );
+			$dest_path   = $current_site->path;
 		} else {
-			$newdomain = $current_site->domain;
-			$path      = $current_site->path . $new_slug . '/';
+			$dest_domain = $current_site->domain;
+			$dest_path   = $current_site->path . $new_slug . '/';
 		}
 
-		// settings to copy from origin site.
-		$title   = get_bloginfo() . ' Copy';
+		// Additional settings to copy from origin site.
+		$dest_title = get_bloginfo() . ' Copy';
 		$user_id = email_exists( get_option( 'admin_email' ) );
 
 		$this->verbose_line( 'New site details:', '', $verbose );
 		$this->verbose_line( '', "    domain -> $new_slug", $verbose );
-		$this->verbose_line( '', "    path   -> $path", $verbose );
-		$this->verbose_line( '', "    title  -> $title", $verbose );
+		$this->verbose_line( '', "    path   -> $dest_path", $verbose );
+		$this->verbose_line( '', "    title  -> $dest_title", $verbose );
 
-		// first step.
-		$id = wpmu_create_blog( $newdomain, $path, $title, $user_id, array( 'public' => 1 ), $current_site->id );
+		// First step, create the blog in the normal way.
+		$new_site_id = wpmu_create_blog( $dest_domain, $dest_path, $dest_title, $user_id, array( 'public' => 1 ), $current_site->id );
 
-		if ( is_wp_error( $id ) ) {
-			WP_CLI::error( $id->get_error_message() );
+		if ( is_wp_error( $new_site_id ) ) {
+			WP_CLI::error( $new_site_id->get_error_message() );
 		}
 
-		$this->verbose_line( 'New site id:', $id, $verbose );
+		$this->verbose_line( 'New site id:', $new_site_id, $verbose );
 
 		$src_wp_upload_dir = wp_upload_dir();
 		$src_basedir       = $src_wp_upload_dir['basedir'];
 		$src_baseurl       = $src_wp_upload_dir['baseurl'];
 
-		// duplicate tables.
-		switch_to_blog( $id );
+		// Switch into the new site to duplicate tables and make other customizations.
+		switch_to_blog( $new_site_id );
 
-		// make upload destination.
+		// Make upload destination.
 		$dest_wp_upload_dir = wp_upload_dir();
 		$dest_basedir       = $dest_wp_upload_dir['basedir'];
 		$dest_baseurl       = $dest_wp_upload_dir['baseurl'];
 		wp_mkdir_p( $dest_basedir );
 
-		// copy files.
+		// Copy files.
 		if ( ! $skip_copy_files ) {
 			$is_shell_exec_enabled = is_callable( 'shell_exec' ) && false === stripos( ini_get( 'disable_functions' ), 'shell_exec' );
 
@@ -123,11 +123,12 @@ class Blog_Duplicate extends WP_CLI_Command {
 			WP_CLI::warning( 'SKIPPING Duplicating uploads...' );
 		}
 
-		// duplicate tables.
+		// Here is where table duplication starts.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$url = home_url();
 		WP_CLI::line( 'Duplicating tables...' );
 
+		// This should look familiar. We want an array of tables for the new site that matches the table array of the source (origin).
 		$extra_tables = array();
 		foreach ( apply_filters( 'blog_duplicator_extra_tables', array() ) as $extra_table ) {
 			$extra_tables[ $extra_table ] = $wpdb->prefix . $extra_table;
@@ -135,8 +136,9 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		$blog_tables = array_merge( $extra_tables, $wpdb->tables( 'blog' ) );
 		foreach ( $blog_tables as $k => $table ) {
-			$origin_table = $origin_tables[ $k ];
+			$src_table = $src_tables[ $k ];
 
+			// Empty our fresh new site table so we can copy stuff into it.
 			$this->verbose_line( 'Running SQL:', "TRUNCATE TABLE $table", $verbose );
 			$wpdb->query( "TRUNCATE TABLE $table" );
 
@@ -149,28 +151,29 @@ class Blog_Duplicate extends WP_CLI_Command {
 				 */
 				$blocked_options = apply_filters( 'blog_duplicator_blocked_options', array( 'jetpack_options', 'jetpack_private_options', 'vaultpress' ) );
 
-				$sql = $wpdb->prepare( "INSERT INTO $table SELECT * FROM $origin_table WHERE option_name NOT IN (" . implode( ', ', array_fill( 0, count( $blocked_options ), '%s' ) ) . ')', ...$blocked_options );
+				$sql = $wpdb->prepare( "INSERT INTO $table SELECT * FROM $src_table WHERE option_name NOT IN (" . implode( ', ', array_fill( 0, count( $blocked_options ), '%s' ) ) . ')', ...$blocked_options );
 			} else {
-				$sql = "INSERT INTO $table SELECT * FROM $origin_table";
+				$sql = "INSERT INTO $table SELECT * FROM $src_table";
 			}
 
 			$this->verbose_line( 'Running SQL:', $sql, $verbose );
 			$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		update_option( 'blogname', $title );
-		update_option( $wpdb->prefix . 'user_roles',  $original_roles );
+		// Re-set the blogname since the table duplication overwrote our setting in wpmu_create_blog.
+		update_option( 'blogname', $dest_title );
+		update_option( $wpdb->prefix . 'user_roles',  $src_roles );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		// long match first, replace upload url.
-		WP_CLI::line( "Search-replace'ing tables (1/2)..." );
+		// Long match first, replace upload url.
+		WP_CLI::line( "Run search-replace on tables (1/2)..." );
 		$_command = "search-replace '$src_baseurl' '$dest_baseurl' --url=$url --quiet --all-tables-with-prefix";
 		$this->verbose_line( 'Running command:', $_command, $verbose );
 		WP_CLI::runcommand( $_command );
 
-		// replace root url.
-		WP_CLI::line( "Search-replace'ing tables (2/2)..." );
-		$_command = "search-replace '$origin_url' '$url' --url=$url --quiet --all-tables-with-prefix";
+		// Replace root url.
+		WP_CLI::line( "Run search-replace on tables (2/2)..." );
+		$_command = "search-replace '$src_url' '$url' --url=$url --quiet --all-tables-with-prefix";
 		$this->verbose_line( 'Running command:', $_command, $verbose );
 		WP_CLI::runcommand( $_command );
 
@@ -178,7 +181,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		restore_current_blog();
 
-		WP_CLI::success( "Blog $id created." );
+		WP_CLI::success( "Blog $new_site_id created." );
 
 	}
 
