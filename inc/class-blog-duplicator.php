@@ -8,6 +8,17 @@ class Blog_Duplicate extends WP_CLI_Command {
 	/**
 	 * Duplicate the current (as specifed by --url, or lack thereof) blog.
 	 *
+	 * ## Important!
+	 *
+	 * Only copies Core tables by default. Support for duplicating custom tables
+	 * is handled through the `blog_duplicator_extra_tables` filter. e.g.
+	 *
+	 *      function myplugin_blog_duplicator_extra_tables( $tables ) {
+	 *          $tables[] = 'myplugin';
+	 *          return $tables;
+	 *      }
+	 *      add_filter( 'blog_duplicator_extra_tables', 'myplugin_blog_duplicator_extra_tables', 10, 1 );
+	 *
 	 * ## OPTIONS
 	 *
 	 * <new-site-slug>
