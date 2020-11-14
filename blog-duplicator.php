@@ -1,5 +1,5 @@
 <?php
-/*
+/**
  * Plugin Name: Blog Duplicator
  * Plugin URI: https://github.com/trepmal/blog-duplicator
  * Description: WP-CLI command for duplicating a blog on a network
@@ -13,6 +13,6 @@
  * Network:
  */
 
-if ( defined('WP_CLI') && WP_CLI ) {
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	include plugin_dir_path( __FILE__ ) . '/blog-duplicator-cli.php';
 }
