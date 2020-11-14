@@ -18,7 +18,12 @@
     "bundled": false,
     "commands": [
       "duplicate"
-    ]
+    ],
+    "readme": {
+      "shields": [
+        "[![Build Status](https://api.travis-ci.org/trepmal/blog-duplicator.svg?branch=master&status=unknown)](https://travis-ci.org/github/trepmal/blog-duplicator)"
+      ]
+    }
   },
   "autoload": {
     "files": [

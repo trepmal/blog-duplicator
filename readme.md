@@ -3,7 +3,7 @@ trepmal/blog-duplicator
 
 Blog Duplicator
 
-
+[![Build Status](https://api.travis-ci.org/trepmal/blog-duplicator.svg?branch=master&status=unknown)](https://travis-ci.org/github/trepmal/blog-duplicator)
 
 Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contributing) | [Support](#support)
 
