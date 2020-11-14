@@ -13,6 +13,8 @@
  * Network:
  */
 
-if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	include plugin_dir_path( __FILE__ ) . '/blog-duplicator-cli.php';
-}
+if ( ! defined( 'WP_CLI' ) ) return;
+
+require_once __DIR__ . '/inc/class-blog-duplicator.php';
+
+WP_CLI::add_command( 'duplicate', 'Blog_Duplicate' );

@@ -202,4 +202,3 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 }
 
-WP_CLI::add_command( 'duplicate', 'Blog_Duplicate' );

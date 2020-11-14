@@ -1,5 +1,49 @@
 {
-	"name": "trepmal/blog-duplicator",
-	"description": "Blog Duplicator",
-	"type": "wordpress-plugin"
+  "name": "trepmal/blog-duplicator",
+  "description": "Blog Duplicator",
+  "type": "wp-cli-package",
+  "homepage": "https://github.com/trepmal/option-autoload-cli",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Kailey Lampert",
+      "email": "trepmal@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.x-dev"
+    },
+    "bundled": false,
+    "commands": [
+      "duplicate"
+    ]
+  },
+  "autoload": {
+    "files": [
+      "blog-duplicator.php"
+    ]
+  },
+  "require-dev": {
+    "wp-cli/wp-cli-tests": "^2.0.7"
+  },
+  "require": {
+    "ext-json": "*",
+    "wp-cli/entity-command": "^2.0@dev"
+  },
+  "scripts": {
+    "behat": "run-behat-tests",
+    "behat-rerun": "rerun-behat-tests",
+    "lint": "run-linter-tests",
+    "phpcs": "run-phpcs-tests",
+    "phpunit": "run-php-unit-tests",
+    "prepare-tests": "install-package-tests",
+    "test": [
+      "@lint",
+      "@phpcs",
+      "@phpunit",
+      "@behat"
+    ]
+  }
 }
