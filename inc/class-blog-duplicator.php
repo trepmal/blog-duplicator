@@ -134,30 +134,53 @@ class Blog_Duplicate extends WP_CLI_Command {
 			$extra_tables[ $extra_table ] = $wpdb->prefix . $extra_table;
 		}
 
-		$blog_tables = array_merge( $extra_tables, $wpdb->tables( 'blog' ) );
+		$blog_tables = array_merge( $wpdb->tables( 'blog' ), $extra_tables );
 		foreach ( $blog_tables as $k => $table ) {
 			$src_table = $src_tables[ $k ];
 
-			// Empty our fresh new site table so we can copy stuff into it.
-			$this->verbose_line( 'Running SQL:', "TRUNCATE TABLE $table", $verbose );
-			$wpdb->query( "TRUNCATE TABLE $table" );
+			// Check if destination table exists. Custom tables may need to be created.
+			$table_maybe_exists = $wpdb->get_results( $wpdb->prepare( "SHOW TABLES like %s", $table ) );
+			if ( empty( $table_maybe_exists ) ) {
 
-			// Remove blocked options from option table before import.
-			if ( $wpdb->options === $table ) {
-				/**
-				 * Filters the list of options that should not be copied.
-				 *
-				 * @param string[] $options An array of option names.
-				 */
-				$blocked_options = apply_filters( 'blog_duplicator_blocked_options', array( 'jetpack_options', 'jetpack_private_options', 'vaultpress' ) );
+				$sql = "CREATE TABLE $table LIKE $src_table";
+				$this->verbose_line( 'Running SQL:', $sql, $verbose );
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				unset( $sql );
 
-				$sql = $wpdb->prepare( "INSERT INTO $table SELECT * FROM $src_table WHERE option_name NOT IN (" . implode( ', ', array_fill( 0, count( $blocked_options ), '%s' ) ) . ')', ...$blocked_options );
+				$sql = "INSERT $table SELECT * FROM $src_table";
+				$this->verbose_line( 'Running SQL:', $sql, $verbose );
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				unset( $sql );
+
 			} else {
-				$sql = "INSERT INTO $table SELECT * FROM $src_table";
+
+				// Empty our fresh new site table so we can copy stuff into it.
+				$sql = "TRUNCATE TABLE $table";
+				$this->verbose_line( 'Running SQL:', $sql, $verbose );
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				unset( $sql );
+
+				// Remove blocked options from option table before import.
+				if ( $wpdb->options === $table ) {
+					/**
+					 * Filters the list of options that should not be copied.
+					 *
+					 * @param string[] $options An array of option names.
+					 */
+					$blocked_options = apply_filters( 'blog_duplicator_blocked_options', array( 'jetpack_options', 'jetpack_private_options', 'vaultpress' ) );
+
+					$sql = $wpdb->prepare( "INSERT INTO $table SELECT * FROM $src_table WHERE option_name NOT IN (" . implode( ', ', array_fill( 0, count( $blocked_options ), '%s' ) ) . ')', ...$blocked_options );
+
+				} else {
+					$sql = "INSERT INTO $table SELECT * FROM $src_table";
+				}
+
+				$this->verbose_line( 'Running SQL:', $sql, $verbose );
+				$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				unset( $sql );
+
 			}
 
-			$this->verbose_line( 'Running SQL:', $sql, $verbose );
-			$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
 		// Re-set the blogname since the table duplication overwrote our setting in wpmu_create_blog.
