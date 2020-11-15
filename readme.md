@@ -10,7 +10,7 @@ Quick links: [Using](#using) | [Installing](#installing) | [Contributing](#contr
 ## Using
 
 ~~~
-wp duplicate <new-site-slug> [--skip-copy-files] [--verbose]
+wp duplicate <new-site-slug> [--skip-copy-files] [--extra-tables=<extra-tables>] [--verbose]
 ~~~
 
 **Important!**
@@ -31,6 +31,9 @@ is handled through the `blog_duplicator_extra_tables` filter. e.g.
 
 	[--skip-copy-files]
 		Skip copying uploaded files
+
+	[--extra-tables=<extra-tables>]
+		Extra tables to include in duplication. Sans-prefix, comma-separated
 
 	[--verbose]
 		Output extra info
