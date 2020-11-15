@@ -27,6 +27,9 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 * [--skip-copy-files]
 	 * : Skip copying uploaded files
 	 *
+	 * [--extra-tables=<extra-tables>]
+	 * : Extra tables to include in duplication. Sans-prefix, comma-separated
+	 *
 	 * [--verbose]
 	 * : Output extra info
 	 *
@@ -42,8 +45,9 @@ class Blog_Duplicate extends WP_CLI_Command {
 		}
 
 		list( $new_slug ) = $args;
-		$verbose          = \WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
-		$skip_copy_files  = \WP_CLI\Utils\get_flag_value( $assoc_args, 'skip-copy-files', false );
+		$verbose          = WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
+		$skip_copy_files  = WP_CLI\Utils\get_flag_value( $assoc_args, 'skip-copy-files', false );
+		$manual_extra_tables = wp_parse_list( WP_CLI\Utils\get_flag_value( $assoc_args, 'extra-tables', '' ) );
 
 		global $wpdb;
 
@@ -57,7 +61,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		 *
 		 * @param string[] $tables An array of blog tables without the database prefix.
 		 */
-		foreach ( apply_filters( 'blog_duplicator_extra_tables', array() ) as $extra_table ) {
+		foreach ( apply_filters( 'blog_duplicator_extra_tables', $manual_extra_tables ) as $extra_table ) {
 			$extra_tables[ $extra_table ] = $wpdb->prefix . $extra_table;
 		}
 
@@ -141,7 +145,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		// This should look familiar. We want an array of tables for the new site that matches the table array of the source (origin).
 		$extra_tables = array();
-		foreach ( apply_filters( 'blog_duplicator_extra_tables', array() ) as $extra_table ) {
+		foreach ( apply_filters( 'blog_duplicator_extra_tables', $manual_extra_tables ) as $extra_table ) {
 			$extra_tables[ $extra_table ] = $wpdb->prefix . $extra_table;
 		}
 
