@@ -85,7 +85,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		$user_id = email_exists( get_option( 'admin_email' ) );
 
 		$this->verbose_line( 'New site details:', '', $verbose );
-		$this->verbose_line( '', "    domain -> $new_slug", $verbose );
+		$this->verbose_line( '', "    domain -> $dest_domain", $verbose );
 		$this->verbose_line( '', "    path   -> $dest_path", $verbose );
 		$this->verbose_line( '', "    title  -> $dest_title", $verbose );
 
