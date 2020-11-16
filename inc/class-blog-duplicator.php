@@ -203,13 +203,13 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		// Long match first, replace upload url.
 		WP_CLI::line( "Run search-replace on tables (1/2)..." );
-		$_command = "search-replace '$src_baseurl' '$dest_baseurl' --url=$url --quiet --all-tables-with-prefix";
+		$_command = sprintf( "search-replace '$src_baseurl' '$dest_baseurl' --url=$url --%s --all-tables-with-prefix", ( $verbose ? 'report-changed-only' : 'quiet' ) );
 		$this->verbose_line( 'Running command:', $_command, $verbose );
 		WP_CLI::runcommand( $_command );
 
 		// Replace root url.
 		WP_CLI::line( "Run search-replace on tables (2/2)..." );
-		$_command = "search-replace '$src_url' '$url' --url=$url --quiet --all-tables-with-prefix";
+		$_command = sprintf( "search-replace '$src_url' '$url' --url=$url --%s --all-tables-with-prefix", ( $verbose ? 'report-changed-only' : 'quiet' ) );
 		$this->verbose_line( 'Running command:', $_command, $verbose );
 		WP_CLI::runcommand( $_command );
 
