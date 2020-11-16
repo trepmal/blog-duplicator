@@ -22,7 +22,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 * ## OPTIONS
 	 *
 	 * <new-site-slug>
-	 * : The subdomain/directory of the new blog
+	 * : The subdomain/directory of the new blog. Only lowercase letters (a-z), numbers, and hyphens are allowed.
 	 *
 	 * [--skip-copy-files]
 	 * : Skip copying uploaded files
@@ -32,6 +32,9 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 *
 	 * [--verbose]
 	 * : Output extra info
+	 *
+	 * [--yes]
+	 * : Confirm 'yes' automatically
 	 *
 	 * ## EXAMPLES
 	 *
@@ -48,6 +51,13 @@ class Blog_Duplicate extends WP_CLI_Command {
 		$verbose          = WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
 		$skip_copy_files  = WP_CLI\Utils\get_flag_value( $assoc_args, 'skip-copy-files', false );
 		$manual_extra_tables = wp_parse_list( WP_CLI\Utils\get_flag_value( $assoc_args, 'extra-tables', '' ) );
+
+		$new_slug = trim( $new_slug );
+		if ( preg_match( '|^([a-zA-Z0-9-])+$|', $new_slug ) ) {
+			$new_slug = strtolower( $new_slug );
+		} else {
+			WP_CLI::error( 'Missing or invalid site address. Only lowercase letters (a-z), numbers, and hyphens are allowed.' );
+		}
 
 		global $wpdb;
 
@@ -84,11 +94,13 @@ class Blog_Duplicate extends WP_CLI_Command {
 		$dest_title = get_bloginfo() . ' Copy';
 		$user_id = email_exists( get_option( 'admin_email' ) );
 
-		$this->verbose_line( 'New site details:', '', $verbose );
-		$this->verbose_line( '', "    domain -> $dest_domain", $verbose );
-		$this->verbose_line( '', "    path   -> $dest_path", $verbose );
-		$this->verbose_line( '', "    title  -> $dest_title", $verbose );
+		WP_CLI::line( 'Preparing to create new site:' );
+		WP_CLI::line( WP_CLI::colorize( " Domain:  %G$dest_domain%n" ) );
+		WP_CLI::line( WP_CLI::colorize( " Path:    %G$dest_path%n" ) );
+		WP_CLI::line( WP_CLI::colorize( " Title:   %G$dest_title%n" ) );
+		WP_CLI::line( WP_CLI::colorize( "Based on:   %Y$src_url%n" ) );
 
+		WP_CLI::confirm( "Proceed with duplication?" );
 		// First step, create the blog in the normal way.
 		$new_site_id = wpmu_create_blog( $dest_domain, $dest_path, $dest_title, $user_id, array( 'public' => 1 ), $current_site->id );
 
