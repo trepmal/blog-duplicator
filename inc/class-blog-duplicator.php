@@ -24,6 +24,9 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 * <new-site-slug>
 	 * : The subdomain/directory of the new blog. Only lowercase letters (a-z), numbers, and hyphens are allowed.
 	 *
+	 * [--domain]
+	 * : Use if duplicated site should have a different domain from the origin.
+	 *
 	 * [--skip-copy-files]
 	 * : Skip copying uploaded files
 	 *
@@ -48,9 +51,10 @@ class Blog_Duplicate extends WP_CLI_Command {
 		}
 
 		list( $new_slug ) = $args;
-		$verbose          = WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
+		$domain           = WP_CLI\Utils\get_flag_value( $assoc_args, 'domain', false );
 		$skip_copy_files  = WP_CLI\Utils\get_flag_value( $assoc_args, 'skip-copy-files', false );
 		$manual_extra_tables = wp_parse_list( WP_CLI\Utils\get_flag_value( $assoc_args, 'extra-tables', '' ) );
+		$verbose          = WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
 
 		$new_slug = trim( $new_slug );
 		if ( preg_match( '|^([a-zA-Z0-9-])+$|', $new_slug ) ) {
@@ -83,10 +87,10 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		// Set up new site information.
 		if ( is_subdomain_install() ) {
-			$dest_domain = $new_slug . '.' . preg_replace( '|^www\.|', '', $current_site->domain );
+			$dest_domain = $domain ?: $new_slug . '.' . preg_replace( '|^www\.|', '', $current_site->domain );
 			$dest_path   = $current_site->path;
 		} else {
-			$dest_domain = $current_site->domain;
+			$dest_domain = $domain ?: $current_site->domain;
 			$dest_path   = $current_site->path . $new_slug . '/';
 		}
 
