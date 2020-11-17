@@ -30,6 +30,9 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 * [--skip-copy-files]
 	 * : Skip copying uploaded files
 	 *
+	 * [--ignore-site-path]
+	 * : Ignore network-defined site path
+	 *
 	 * [--extra-tables=<extra-tables>]
 	 * : Extra tables to include in duplication. Sans-prefix, comma-separated
 	 *
@@ -53,6 +56,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		list( $new_slug ) = $args;
 		$domain           = WP_CLI\Utils\get_flag_value( $assoc_args, 'domain', false );
 		$skip_copy_files  = WP_CLI\Utils\get_flag_value( $assoc_args, 'skip-copy-files', false );
+		$ignore_site_path = WP_CLI\Utils\get_flag_value( $assoc_args, 'ignore-site-path', false );
 		$manual_extra_tables = wp_parse_list( WP_CLI\Utils\get_flag_value( $assoc_args, 'extra-tables', '' ) );
 		$verbose          = WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
 
@@ -88,10 +92,10 @@ class Blog_Duplicate extends WP_CLI_Command {
 		// Set up new site information.
 		if ( is_subdomain_install() ) {
 			$dest_domain = $domain ?: $new_slug . '.' . preg_replace( '|^www\.|', '', $current_site->domain );
-			$dest_path   = $current_site->path;
+			$dest_path   = $ignore_site_path ? '/' : $current_site->path;
 		} else {
 			$dest_domain = $domain ?: $current_site->domain;
-			$dest_path   = $current_site->path . $new_slug . '/';
+			$dest_path   = ($ignore_site_path ? '/' : $current_site->path) . $new_slug . '/';
 		}
 
 		// Additional settings to copy from origin site.
