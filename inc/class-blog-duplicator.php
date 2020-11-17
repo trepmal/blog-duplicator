@@ -108,7 +108,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		WP_CLI::line( WP_CLI::colorize( " Title:   %G$dest_title%n" ) );
 		WP_CLI::line( WP_CLI::colorize( "Based on:   %Y$src_url%n" ) );
 
-		WP_CLI::confirm( "Proceed with duplication?" );
+		WP_CLI::confirm( "Proceed with duplication?", $assoc_args );
 		// First step, create the blog in the normal way.
 		$new_site_id = wpmu_create_blog( $dest_domain, $dest_path, $dest_title, $user_id, array( 'public' => 1 ), $current_site->id );
 
