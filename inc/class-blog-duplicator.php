@@ -102,11 +102,11 @@ class Blog_Duplicate extends WP_CLI_Command {
 		$dest_title = get_bloginfo() . ' Copy';
 		$user_id = email_exists( get_option( 'admin_email' ) );
 
-		WP_CLI::line( 'Preparing to create new site:' );
-		WP_CLI::line( WP_CLI::colorize( " Domain:  %G$dest_domain%n" ) );
-		WP_CLI::line( WP_CLI::colorize( " Path:    %G$dest_path%n" ) );
-		WP_CLI::line( WP_CLI::colorize( " Title:   %G$dest_title%n" ) );
-		WP_CLI::line( WP_CLI::colorize( "Based on:   %Y$src_url%n" ) );
+		WP_CLI::log( 'Preparing to create new site:' );
+		WP_CLI::log( WP_CLI::colorize( " Domain:  %G$dest_domain%n" ) );
+		WP_CLI::log( WP_CLI::colorize( " Path:    %G$dest_path%n" ) );
+		WP_CLI::log( WP_CLI::colorize( " Title:   %G$dest_title%n" ) );
+		WP_CLI::log( WP_CLI::colorize( "Based on:   %Y$src_url%n" ) );
 
 		WP_CLI::confirm( "Proceed with duplication?", $assoc_args );
 		// First step, create the blog in the normal way.
@@ -141,7 +141,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 				$is_rsync_installed = ! empty( shell_exec( 'which rsync' ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec
 
 				if ( $is_rsync_installed ) {
-					WP_CLI::line( 'Duplicating uploads...' );
+					WP_CLI::log( 'Duplicating uploads...' );
 					$this->verbose_line( 'Running command:', "rsync -a {$src_basedir}/ {$dest_basedir} --exclude sites", $verbose );
 					shell_exec( // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_shell_exec
 						sprintf(
@@ -161,7 +161,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		// Here is where table duplication starts.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$url = home_url();
-		WP_CLI::line( 'Duplicating tables...' );
+		WP_CLI::log( 'Duplicating tables...' );
 
 		// This should look familiar. We want an array of tables for the new site that matches the table array of the source (origin).
 		$extra_tables = array();
@@ -210,13 +210,13 @@ class Blog_Duplicate extends WP_CLI_Command {
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		// Long match first, replace upload url.
-		WP_CLI::line( "Run search-replace on tables (1/2)..." );
+		WP_CLI::log( "Run search-replace on tables (1/2)..." );
 		$_command = sprintf( "search-replace '$src_baseurl' '$dest_baseurl' --url=$url --%s --all-tables-with-prefix", ( $verbose ? 'report-changed-only' : 'quiet' ) );
 		$this->verbose_line( 'Running command:', $_command, $verbose );
 		WP_CLI::runcommand( $_command );
 
 		// Replace root url.
-		WP_CLI::line( "Run search-replace on tables (2/2)..." );
+		WP_CLI::log( "Run search-replace on tables (2/2)..." );
 		$_command = sprintf( "search-replace '$src_url' '$url' --url=$url --%s --all-tables-with-prefix", ( $verbose ? 'report-changed-only' : 'quiet' ) );
 		$this->verbose_line( 'Running command:', $_command, $verbose );
 		WP_CLI::runcommand( $_command );
@@ -239,7 +239,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 */
 	private function verbose_line( $pre, $text, $verbose = false ) {
 		if ( $verbose ) {
-			WP_CLI::line(
+			WP_CLI::log(
 				WP_CLI::colorize(
 					"%C$pre%n $text"
 				)
