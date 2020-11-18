@@ -21,11 +21,11 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 *
 	 * ## OPTIONS
 	 *
-	 * <new-site-slug>
+	 * <new-blog-slug>
 	 * : The subdomain/directory of the new blog. Only lowercase letters (a-z), numbers, and hyphens are allowed.
 	 *
 	 * [--domain]
-	 * : Use if duplicated site should have a different domain from the origin.
+	 * : Use if duplicated blog should have a different domain from the origin.
 	 *
 	 * [--skip-copy-files]
 	 * : Skip copying uploaded files
@@ -45,7 +45,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 	 * ## EXAMPLES
 	 *
 	 *     wp duplicate domain-slug
-	 *     wp duplicate test-site-12 --url=multisite.local/test-site-3
+	 *     wp duplicate test-blog-12 --url=multisite.local/test-blog-3
 	 */
 	public function __invoke( $args, $assoc_args ) {
 
@@ -69,11 +69,11 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		global $wpdb;
 
-		// Get table info for source (origin) site.
+		// Get table info for source (origin) blog.
 		$extra_tables = array();
 
 		/**
-		 * Filters the list blog tables for a given site.
+		 * Filters the list blog tables for a given blog.
 		 *
 		 * This filter allows new tables to be added to the core list.
 		 *
@@ -89,7 +89,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		global $current_site;
 
-		// Set up new site information.
+		// Set up new blog information.
 		if ( is_subdomain_install() ) {
 			$dest_domain = $domain ?: $new_slug . '.' . preg_replace( '|^www\.|', '', $current_site->domain );
 			$dest_path   = $ignore_site_path ? '/' : $current_site->path;
@@ -98,11 +98,11 @@ class Blog_Duplicate extends WP_CLI_Command {
 			$dest_path   = ($ignore_site_path ? '/' : $current_site->path) . $new_slug . '/';
 		}
 
-		// Additional settings to copy from origin site.
+		// Additional settings to copy from origin blog.
 		$dest_title = get_bloginfo() . ' Copy';
 		$user_id = email_exists( get_option( 'admin_email' ) );
 
-		WP_CLI::log( 'Preparing to create new site:' );
+		WP_CLI::log( 'Preparing to create new blog:' );
 		WP_CLI::log( WP_CLI::colorize( " Domain:  %G$dest_domain%n" ) );
 		WP_CLI::log( WP_CLI::colorize( " Path:    %G$dest_path%n" ) );
 		WP_CLI::log( WP_CLI::colorize( " Title:   %G$dest_title%n" ) );
@@ -110,20 +110,20 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		WP_CLI::confirm( "Proceed with duplication?", $assoc_args );
 		// First step, create the blog in the normal way.
-		$new_site_id = wpmu_create_blog( $dest_domain, $dest_path, $dest_title, $user_id, array( 'public' => 1 ), $current_site->id );
+		$new_blog_id = wpmu_create_blog( $dest_domain, $dest_path, $dest_title, $user_id, array( 'public' => 1 ), $current_site->id );
 
-		if ( is_wp_error( $new_site_id ) ) {
-			WP_CLI::error( $new_site_id->get_error_message() );
+		if ( is_wp_error( $new_blog_id ) ) {
+			WP_CLI::error( $new_blog_id->get_error_message() );
 		}
 
-		$this->verbose_line( 'New site id:', $new_site_id, $verbose );
+		$this->verbose_line( 'New blog id:', $new_blog_id, $verbose );
 
 		$src_wp_upload_dir = wp_upload_dir();
 		$src_basedir       = $src_wp_upload_dir['basedir'];
 		$src_baseurl       = $src_wp_upload_dir['baseurl'];
 
-		// Switch into the new site to duplicate tables and make other customizations.
-		switch_to_blog( $new_site_id );
+		// Switch into the new blog to duplicate tables and make other customizations.
+		switch_to_blog( $new_blog_id );
 
 		// Make upload destination.
 		$dest_wp_upload_dir = wp_upload_dir();
@@ -163,7 +163,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 		$url = home_url();
 		WP_CLI::log( 'Duplicating tables...' );
 
-		// This should look familiar. We want an array of tables for the new site that matches the table array of the source (origin).
+		// This should look familiar. We want an array of tables for the new blog that matches the table array of the source (origin).
 		$extra_tables = array();
 		foreach ( apply_filters( 'blog_duplicator_extra_tables', $manual_extra_tables ) as $extra_table ) {
 			$extra_tables[ $extra_table ] = $wpdb->prefix . $extra_table;
@@ -225,7 +225,7 @@ class Blog_Duplicate extends WP_CLI_Command {
 
 		restore_current_blog();
 
-		WP_CLI::success( "Blog $new_site_id created." );
+		WP_CLI::success( "Blog $new_blog_id created." );
 
 	}
 
